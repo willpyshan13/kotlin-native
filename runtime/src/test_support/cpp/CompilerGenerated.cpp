@@ -29,11 +29,10 @@ TypeInfo theThrowableTypeInfoImpl = {};
 TypeInfo theUnitTypeInfoImpl = {};
 TypeInfo theWorkerBoundReferenceTypeInfoImpl = {};
 
-
-template<class T>
+template <class T>
 struct KBox {
-  ObjHeader header;
-  const T value;
+    ObjHeader header;
+    const T value;
 };
 
 } // namespace
@@ -163,48 +162,52 @@ OBJ_GETTER(Kotlin_boxBoolean, KBoolean value) {
 extern const KBoolean BOOLEAN_RANGE_FROM = false;
 extern const KBoolean BOOLEAN_RANGE_TO = true;
 extern KBox<KBoolean> BOOLEAN_CACHE[] = {
-  { {}, false },
-  { {}, true },
+        {{}, false},
+        {{}, true},
 };
 
 extern const KByte BYTE_RANGE_FROM = -1;
 extern const KByte BYTE_RANGE_TO = 1;
 extern KBox<KByte> BYTE_CACHE[] = {
-  { {}, -1 },
-  { {}, 0 },
-  { {}, 1 },
+        {{}, -1},
+        {{}, 0},
+        {{}, 1},
 };
 
 extern const KChar CHAR_RANGE_FROM = 0;
 extern const KChar CHAR_RANGE_TO = 2;
 extern KBox<KChar> CHAR_CACHE[] = {
-  { {}, 0 },
-  { {}, 1 },
-  { {}, 2 },
+        {{}, 0},
+        {{}, 1},
+        {{}, 2},
 };
 
 extern const KShort SHORT_RANGE_FROM = -1;
 extern const KShort SHORT_RANGE_TO = 1;
 extern KBox<KShort> SHORT_CACHE[] = {
-  { {}, -1 },
-  { {}, 0 },
-  { {}, 1 },
+        {{}, -1},
+        {{}, 0},
+        {{}, 1},
 };
 
 extern const KInt INT_RANGE_FROM = -1;
 extern const KInt INT_RANGE_TO = 1;
 extern KBox<KInt> INT_CACHE[] = {
-  { {}, -1 },
-  { {}, 0 },
-  { {}, 1 },
+        {{}, -1},
+        {{}, 0},
+        {{}, 1},
 };
 
 extern const KLong LONG_RANGE_FROM = -1;
 extern const KLong LONG_RANGE_TO = 1;
 extern KBox<KLong> LONG_CACHE[] = {
-  { {}, -1 },
-  { {}, 0 },
-  { {}, 1 },
+        {{}, -1},
+        {{}, 0},
+        {{}, 1},
 };
+
+OBJ_GETTER(Kotlin_Throwable_getMessage, KRef throwable) {
+    return nullptr;
+}
 
 } // extern "C"
