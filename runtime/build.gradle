@@ -4,6 +4,7 @@
  */
 import org.jetbrains.kotlin.CompileToBitcode
 import org.jetbrains.kotlin.CompilationDatabaseKt
+import org.jetbrains.kotlin.NativeTestKt
 import org.jetbrains.kotlin.UtilsKt
 
 // TODO: consider using some Gradle plugins to build and test
@@ -33,6 +34,8 @@ targetList.each { targetName ->
 
     tasks.create("${targetName}Mimalloc", CompileToBitcode, file('src/mimalloc'), "mimalloc", targetName).configure {
         language = CompileToBitcode.Language.C
+        includeFiles.clear()
+        includeFiles.add("**/*.c")
         excludeFiles.addAll(["**/alloc-override*.c", "**/page-queue.c", "**/static.c"])
         if (!UtilsKt.targetSupportsMimallocAllocator(targetName))
             excludedTargets.add(targetName)
@@ -76,11 +79,43 @@ targetList.each { targetName ->
     tasks.create("${targetName}ObjC", CompileToBitcode, file('src/objc'), "objc", targetName).configure {
         includeRuntime(delegate)
     }
+
+    tasks.create("${targetName}RuntimeTestSupport", CompileToBitcode, file('src/test_support'), "test_support", targetName).configure {
+        includeRuntime(delegate)
+    }
+
+    NativeTestKt.createTestTask(
+            project,
+            "${targetName}StdAllocRuntimeTests",
+            ["${targetName}Runtime".toString(),
+             "${targetName}RuntimeTestSupport".toString(),
+             "${targetName}Strict".toString(),
+             "${targetName}Release".toString(),
+             "${targetName}StdAlloc".toString(),
+            ])
+
+    NativeTestKt.createTestTask(
+            project,
+            "${targetName}MimallocRuntimeTests",
+            ["${targetName}Runtime".toString(),
+             "${targetName}RuntimeTestSupport".toString(),
+             "${targetName}Strict".toString(),
+             "${targetName}Release".toString(),
+             "${targetName}Mimalloc".toString(),
+             "${targetName}OptAlloc".toString(),
+            ])
+
+    tasks.create("${targetName}RuntimeTests", Task) {
+        dependsOn "${targetName}StdAllocRuntimeTests"
+        dependsOn "${targetName}MimallocRuntimeTests"
+    }
 }
 
 CompilationDatabaseKt.createCompilationDatabasesFromCompileToBitcodeTasks(project, "CompilationDatabase")
 
 task hostRuntime(dependsOn: "${hostName}Runtime")
+
+task hostRuntimeTests(dependsOn: "${hostName}RuntimeTests")
 
 task clean {
     doLast {

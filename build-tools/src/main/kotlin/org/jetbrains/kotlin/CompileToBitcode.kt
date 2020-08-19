@@ -37,7 +37,14 @@ open class CompileToBitcode @Inject constructor(@InputDirectory val srcRoot: Fil
 
     val compilerArgs = mutableListOf<String>()
     val linkerArgs = mutableListOf<String>()
-    val excludeFiles = mutableListOf<String>()
+    val excludeFiles = mutableListOf(
+            "**/*Test.cpp",
+            "**/*Test.mm",
+    )
+    val includeFiles = mutableListOf(
+            "**/*.cpp",
+            "**/*.mm"
+    )
     var srcDir = File(srcRoot, "cpp")
     var headersDir = File(srcRoot, "headers")
     var skipLinkagePhase = false
@@ -77,13 +84,8 @@ open class CompileToBitcode @Inject constructor(@InputDirectory val srcRoot: Fil
 
     val inputFiles: Iterable<File>
         get() {
-            val srcFilesPatterns =
-                when (language) {
-                    Language.C -> listOf("**/*.c")
-                    Language.CPP -> listOf("**/*.cpp", "**/*.mm")
-                }
             return project.fileTree(srcDir) {
-                it.include(srcFilesPatterns)
+                it.include(includeFiles)
                 it.exclude(excludeFiles)
             }.files
         }
