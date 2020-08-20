@@ -1,0 +1,36 @@
+/*
+ * Copyright 2010-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license
+ * that can be found in the LICENSE file.
+ */
+import org.jetbrains.kotlin.CompileToBitcode
+import org.jetbrains.kotlin.CompilationDatabaseKt
+
+targetList.each { targetName ->
+    tasks.create("${targetName}googletest", CompileToBitcode, file("googletest/googletest"), 'googletest', targetName).configure {
+        srcDir = file("googletest/googletest/src")
+        headersDir = file("googletest/googletest")
+        compilerArgs.add("-I" + file("googletest/googletest/include"))
+        includeFiles.clear()
+        includeFiles.addAll(["*.cc"])
+        excludeFiles.clear()
+        excludeFiles.addAll(["gtest-all.cc", "gtest_main.cc"])
+    }
+
+    tasks.create("${targetName}googlemock", CompileToBitcode, file("googletest/googlemock"), 'googlemock', targetName).configure {
+        srcDir = file("googletest/googlemock/src")
+        headersDir = file("googletest/googlemock")
+        compilerArgs.add("-I" + file("googletest/googlemock/include"))
+        compilerArgs.add("-I" + file("googletest/googletest/include"))
+        includeFiles.clear()
+        includeFiles.addAll(["*.cc"])
+        excludeFiles.clear()
+        excludeFiles.addAll(["gmock-all.cc", "gmock_main.cc"])
+    }
+}
+
+task build {
+    dependsOn "${hostName}googletest"
+    dependsOn "${hostName}googlemock"
+}
+
+CompilationDatabaseKt.createCompilationDatabasesFromCompileToBitcodeTasks(project, "CompilationDatabase")

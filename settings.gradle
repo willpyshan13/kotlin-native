@@ -32,6 +32,7 @@ include ':backend.native:debugger-tests'
 include ':utilities:basic-utils'
 include ':utilities:cli-runner'
 include 'dependencyPacker'
+include ':third_party:googletest'
 
 include ':performance'
 include ':performance:ring'
