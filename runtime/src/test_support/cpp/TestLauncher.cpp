@@ -3,7 +3,10 @@
  * that can be found in the LICENSE file.
  */
 
-int main() {
-    // TODO: Actually do something.
-    return 0;
+#include "gmock/gmock.h"
+#include "gtest/gtest.h"
+
+int main(int argc, char **argv) {
+    testing::InitGoogleMock(&argc, argv);
+    return RUN_ALL_TESTS();
 }

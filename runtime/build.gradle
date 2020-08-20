@@ -82,6 +82,10 @@ targetList.each { targetName ->
 
     tasks.create("${targetName}RuntimeTestSupport", CompileToBitcode, file('src/test_support'), "test_support", targetName).configure {
         includeRuntime(delegate)
+        compilerArgs.add("-I" +
+                project.rootProject.file("third_party/googletest/googletest/googletest/include"))
+        compilerArgs.add("-I" +
+                project.rootProject.file("third_party/googletest/googletest/googlemock/include"))
     }
 
     NativeTestKt.createTestTask(

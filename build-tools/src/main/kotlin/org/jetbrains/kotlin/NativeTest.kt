@@ -113,6 +113,10 @@ fun createTestTask(
     val testedTasks = testedTaskNames.map {
         project.tasks.getByName(it) as CompileToBitcode
     }
+    val target = testedTasks.map {
+        it.target
+    }.distinct().single()
+    val konanTarget = platformManager.targetByName(target)
     val compileToBitcodeTasks = testedTasks.mapNotNull {
         val name = "${it.name}TestBitcode"
         val task = project.tasks.findByName(name) as? CompileToBitcode ?:
@@ -120,37 +124,40 @@ fun createTestTask(
                     CompileToBitcode::class.java,
                     it.srcRoot,
                     "${it.folderName}Tests",
-                    it.target
+                    target
                     ).configure {
                 includeFiles.clear()
                 excludeFiles.clear()
                 includeFiles.addAll(listOf("**/*Test.cpp", "**/*Test.mm"))
                 dependsOn(it)
                 compilerArgs.addAll(it.compilerArgs)
+                compilerArgs.add("-I" +
+                        File(project.rootProject.rootDir, "third_party/googletest/googletest/googletest/include"))
+                compilerArgs.add("-I" +
+                        File(project.rootProject.rootDir, "third_party/googletest/googletest/googlemock/include"))
             }
         if (task.inputFiles.count() == 0)
             null
         else
             task
     }
-    val compileToObjectFileTasks = (compileToBitcodeTasks + testedTasks).map {
+    val testFrameworkTasks = listOf(
+        project.tasks.getByPath(":third_party:googletest:${target}googletest") as CompileToBitcode,
+        project.tasks.getByPath(":third_party:googletest:${target}googlemock") as CompileToBitcode)
+    val compileToObjectFileTasks = (compileToBitcodeTasks + testedTasks + testFrameworkTasks).map {
         val name = "${it.name}Object"
-        val target = platformManager.targetByName(it.target)
-        val clangFlags = platformManager.platform(target).configurables as ClangFlags
+        val clangFlags = platformManager.platform(konanTarget).configurables as ClangFlags
         project.tasks.findByName(name) as? CompileNativeTest ?:
                 project.tasks.create(name,
                         CompileNativeTest::class.java,
                         it.outFile,
-                        it.target
+                        target
                 ).configure {
                     dependsOn(it)
                     clangArgs.addAll(clangFlags.clangFlags)
                     clangArgs.addAll(clangFlags.clangNooptFlags)
                 }
     }
-    val target = compileToObjectFileTasks.map {
-        it.target
-    }.distinct().single()
     val linkTask = LinkNativeTest.create(
             project,
             platformManager,
