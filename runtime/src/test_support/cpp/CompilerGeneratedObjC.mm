@@ -3,6 +3,8 @@
  * that can be found in the LICENSE file.
  */
 
+#if KONAN_OBJC_INTEROP
+
 #include <Foundation/NSObject.h>
 
 #include "Types.h"
@@ -46,3 +48,5 @@ void Kotlin_ObjCExport_resumeContinuationFailure(KRef continuation, KRef excepti
 void Kotlin_ObjCExport_resumeContinuationSuccess(KRef continuation, KRef result) {}
 
 } // extern "C"
+
+#endif // KONAN_OBJC_INTEROP
