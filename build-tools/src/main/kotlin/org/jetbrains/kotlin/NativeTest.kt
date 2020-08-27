@@ -143,7 +143,8 @@ fun createTestTask(
     }
     val testFrameworkTasks = listOf(
         project.tasks.getByPath(":third_party:googletest:${target}googletest") as CompileToBitcode,
-        project.tasks.getByPath(":third_party:googletest:${target}googlemock") as CompileToBitcode)
+        project.tasks.getByPath(":third_party:googletest:${target}googlemock") as CompileToBitcode
+    )
     val compileToObjectFileTasks = (compileToBitcodeTasks + testedTasks + testFrameworkTasks).map {
         val name = "${it.name}Object"
         val clangFlags = platformManager.platform(konanTarget).configurables as ClangFlags
@@ -171,7 +172,6 @@ fun createTestTask(
     return project.tasks.create(testTaskName, Exec::class.java).configure {
         dependsOn(linkTask)
         val xmlReport = project.buildDir.resolve("testReports/$testTaskName.xml")
-        outputs.file(xmlReport)
         executable(linkTask.outputFile)
         args("--gtest_output=xml:${xmlReport.absoluteFile}")
     }
