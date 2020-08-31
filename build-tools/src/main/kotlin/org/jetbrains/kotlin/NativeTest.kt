@@ -10,6 +10,7 @@ import java.io.File
 import javax.inject.Inject
 import org.gradle.api.*
 import org.gradle.api.tasks.*
+import org.gradle.nativeplatform.test.tasks.RunTestExecutable
 import org.jetbrains.kotlin.konan.target.*
 
 open class CompileNativeTest @Inject constructor(
@@ -126,9 +127,8 @@ fun createTestTask(
                     "${it.folderName}Tests",
                     target
                     ).configure {
-                includeFiles.clear()
-                excludeFiles.clear()
-                includeFiles.addAll(listOf("**/*Test.cpp", "**/*Test.mm"))
+                excludeFiles = emptyList()
+                includeFiles = listOf("**/*Test.cpp", "**/*Test.mm")
                 dependsOn(it)
                 compilerArgs.addAll(it.compilerArgs)
                 compilerArgs.add("-I" +
@@ -142,8 +142,9 @@ fun createTestTask(
             task
     }
     val testFrameworkTasks = listOf(
-        project.tasks.getByPath(":third_party:googletest:${target}googletest") as CompileToBitcode,
-        project.tasks.getByPath(":third_party:googletest:${target}googlemock") as CompileToBitcode)
+        project.tasks.getByPath(":third_party:googletest:${target}Googletest") as CompileToBitcode,
+        project.tasks.getByPath(":third_party:googletest:${target}Googlemock") as CompileToBitcode
+    )
     val compileToObjectFileTasks = (compileToBitcodeTasks + testedTasks + testFrameworkTasks).map {
         val name = "${it.name}Object"
         val clangFlags = platformManager.platform(konanTarget).configurables as ClangFlags
@@ -168,10 +169,11 @@ fun createTestTask(
     ).configure {
         dependsOn(compileToObjectFileTasks)
     }
-    return project.tasks.create(testTaskName, Exec::class.java).configure {
+
+    return project.tasks.create(testTaskName, RunTestExecutable::class.java).configure {
         dependsOn(linkTask)
-        val xmlReport = project.buildDir.resolve("testReports/$testTaskName.xml")
-        outputs.file(xmlReport)
+        outputDir = project.buildDir.resolve("testReports/$testTaskName")
+        val xmlReport = outputDir.resolve("report.xml")
         executable(linkTask.outputFile)
         args("--gtest_output=xml:${xmlReport.absoluteFile}")
     }

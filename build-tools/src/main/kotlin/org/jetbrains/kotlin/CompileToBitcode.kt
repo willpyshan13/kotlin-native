@@ -18,7 +18,7 @@ package org.jetbrains.kotlin
 
 import org.gradle.api.Action
 import org.gradle.api.DefaultTask
-import org.gradle.api.tasks.InputDirectory
+import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 import org.jetbrains.kotlin.konan.target.Family
@@ -28,7 +28,8 @@ import org.jetbrains.kotlin.konan.target.KonanTarget
 import java.io.File
 import javax.inject.Inject
 
-open class CompileToBitcode @Inject constructor(@InputDirectory val srcRoot: File,
+// TODO: Configure IO
+open class CompileToBitcode @Inject constructor(val srcRoot: File,
                                                 val folderName: String,
                                                 val target: String) : DefaultTask() {
     enum class Language {
@@ -37,18 +38,18 @@ open class CompileToBitcode @Inject constructor(@InputDirectory val srcRoot: Fil
 
     val compilerArgs = mutableListOf<String>()
     val linkerArgs = mutableListOf<String>()
-    val excludeFiles = mutableListOf(
+    var excludeFiles: List<String> = listOf(
             "**/*Test.cpp",
             "**/*Test.mm",
     )
-    val includeFiles = mutableListOf(
+    var includeFiles: List<String> = listOf(
             "**/*.cpp",
             "**/*.mm"
     )
     var srcDir = File(srcRoot, "cpp")
     var headersDir = File(srcRoot, "headers")
     var skipLinkagePhase = false
-    var excludedTargets = mutableListOf<String>()
+    var excludedTargets = mutableListOf<String>() // TODO: Rework and replace with simple onlyIf { }
     var language = Language.CPP
 
     private val targetDir by lazy { File(project.buildDir, target) }
@@ -82,6 +83,7 @@ open class CompileToBitcode @Inject constructor(@InputDirectory val srcRoot: Fil
             return commonFlags + languageFlags + compilerArgs
         }
 
+    @get:InputFiles
     val inputFiles: Iterable<File>
         get() {
             return project.fileTree(srcDir) {
