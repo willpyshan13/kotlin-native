@@ -18,9 +18,7 @@ package org.jetbrains.kotlin
 
 import org.gradle.api.Action
 import org.gradle.api.DefaultTask
-import org.gradle.api.tasks.InputFiles
-import org.gradle.api.tasks.OutputFile
-import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.*
 import org.jetbrains.kotlin.konan.target.Family
 import org.jetbrains.kotlin.konan.target.HostManager
 import org.jetbrains.kotlin.konan.target.KonanTarget
@@ -28,15 +26,19 @@ import org.jetbrains.kotlin.konan.target.KonanTarget
 import java.io.File
 import javax.inject.Inject
 
-// TODO: Configure IO
-open class CompileToBitcode @Inject constructor(val srcRoot: File,
-                                                val folderName: String,
-                                                val target: String) : DefaultTask() {
+open class CompileToBitcode @Inject constructor(
+        val srcRoot: File,
+        val folderName: String,
+        val target: String
+) : DefaultTask() {
+
     enum class Language {
         C, CPP
     }
 
+    // Compiler args are part of compilerFlags so we don't register them as an input.
     val compilerArgs = mutableListOf<String>()
+    @Input
     val linkerArgs = mutableListOf<String>()
     var excludeFiles: List<String> = listOf(
             "**/*Test.cpp",
@@ -46,10 +48,15 @@ open class CompileToBitcode @Inject constructor(val srcRoot: File,
             "**/*.cpp",
             "**/*.mm"
     )
+
+    // Source files and headers are registered as inputs by the `inputFiles` and `headers` properties.
     var srcDir = File(srcRoot, "cpp")
-    var headersDir = File(srcRoot, "headers")
+    var headersDirs: List<File> = listOf(File(srcRoot, "headers"))
+
+    @Input
     var skipLinkagePhase = false
-    var excludedTargets = mutableListOf<String>() // TODO: Rework and replace with simple onlyIf { }
+
+    @Input
     var language = Language.CPP
 
     private val targetDir by lazy { File(project.buildDir, target) }
@@ -65,9 +72,10 @@ open class CompileToBitcode @Inject constructor(val srcRoot: File,
             Language.CPP -> "clang++"
         }
 
+    @get:Input
     val compilerFlags: List<String>
         get() {
-            val commonFlags = listOf("-c", "-emit-llvm", "-I$headersDir")
+            val commonFlags = listOf("-c", "-emit-llvm") + headersDirs.map { "-I$it" }
             val languageFlags = when (language) {
                 Language.C ->
                     // Used flags provided by original build of allocator C code.
@@ -92,12 +100,21 @@ open class CompileToBitcode @Inject constructor(val srcRoot: File,
             }.files
         }
 
+    @get:InputFiles
+    protected val headers: Iterable<File>
+        get() {
+            return headersDirs.flatMap { dir ->
+                project.fileTree(dir) {
+                    it.include("**/*.h", "**/*.hpp")
+                }.files
+            }
+        }
+
     @OutputFile
     val outFile = File(targetDir, "${folderName}.bc")
 
     @TaskAction
     fun compile() {
-        if (target in excludedTargets) return
         objDir.mkdirs()
         val plugin = project.convention.getPlugin(ExecClang::class.java)
 

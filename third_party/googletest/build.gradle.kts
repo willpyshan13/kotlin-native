@@ -10,7 +10,7 @@ plugins {
 bitcode {
     create("googletest") {
         srcDir = file("googletest/googletest/src")
-        headersDir = file("googletest/googletest")
+        headersDirs = listOf(file("googletest/googletest"))
         compilerArgs.add("-I" + file("googletest/googletest/include"))
         includeFiles = listOf("*.cc")
         excludeFiles = listOf("gtest-all.cc", "gtest_main.cc")
@@ -18,7 +18,7 @@ bitcode {
 
     create("googlemock") {
         srcDir = file("googletest/googlemock/src")
-        headersDir = file("googletest/googlemock")
+        headersDirs = listOf(file("googletest/googlemock"))
         compilerArgs.add("-I" + file("googletest/googlemock/include"))
         compilerArgs.add("-I" + file("googletest/googletest/include"))
         includeFiles = listOf("*.cc")

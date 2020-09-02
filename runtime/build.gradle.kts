@@ -9,8 +9,10 @@ plugins {
 }
 
 fun CompileToBitcode.includeRuntime() {
-    compilerArgs.add("-I" + project.file("../common/src/hash/headers"))
-    compilerArgs.add("-I" + project.file("src/main/cpp"))
+    headersDirs += listOf(
+            file("../common/src/hash/headers"),
+            file("src/main/cpp")
+    )
 }
 
 val hostName: String by project
@@ -40,11 +42,11 @@ bitcode {
         language = CompileToBitcode.Language.C
         includeFiles = listOf("**/*.c")
         excludeFiles += listOf("**/alloc-override*.c", "**/page-queue.c", "**/static.c")
-        if (!targetSupportsMimallocAllocator(target))
-            excludedTargets.add(target)
         srcDir = File(srcRoot, "c")
         compilerArgs.add("-DKONAN_MI_MALLOC=1")
-        headersDir = File(srcDir, "include")
+        headersDirs = listOf(File(srcDir, "include"))
+
+        onlyIf { targetSupportsMimallocAllocator(target) }
     }
 
     create("launcher") {
