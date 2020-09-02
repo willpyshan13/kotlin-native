@@ -3,6 +3,7 @@
  * that can be found in the LICENSE file.
  */
 import org.jetbrains.kotlin.*
+import org.jetbrains.kotlin.bitcode.CompileToBitcode
 
 plugins {
     id("compile-to-bitcode")

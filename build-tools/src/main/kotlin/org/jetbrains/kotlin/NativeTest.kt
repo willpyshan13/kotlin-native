@@ -11,6 +11,7 @@ import javax.inject.Inject
 import org.gradle.api.*
 import org.gradle.api.tasks.*
 import org.gradle.nativeplatform.test.tasks.RunTestExecutable
+import org.jetbrains.kotlin.bitcode.CompileToBitcode
 import org.jetbrains.kotlin.konan.target.*
 
 open class CompileNativeTest @Inject constructor(
