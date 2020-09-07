@@ -7,10 +7,7 @@ package org.jetbrains.kotlin.bitcode
 
 import org.gradle.api.Action
 import org.gradle.api.DefaultTask
-import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.InputFiles
-import org.gradle.api.tasks.OutputFile
-import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.*
 import org.jetbrains.kotlin.ExecClang
 import org.jetbrains.kotlin.konan.target.Family
 import org.jetbrains.kotlin.konan.target.HostManager
@@ -83,6 +80,7 @@ open class CompileToBitcode @Inject constructor(
             return commonFlags + languageFlags + compilerArgs
         }
 
+    @get:SkipWhenEmpty
     @get:InputFiles
     val inputFiles: Iterable<File>
         get() {
