@@ -9,28 +9,6 @@
 #include "Memory.h"
 #include "MemorySharedRefs.hpp"
 
-namespace {
-
-struct WorkerBoundReference {
-  ObjHeader header;
-  KRefSharedHolder* holder;
-};
-
-WorkerBoundReference* asWorkerBoundReference(KRef thiz) {
-  return reinterpret_cast<WorkerBoundReference*>(thiz);
-}
-
-}  // namespace
-
-RUNTIME_NOTHROW void DisposeWorkerBoundReference(KRef thiz) {
-  // DisposeSharedRef is only called when all references to thiz are gone.
-  // Can be null if WorkerBoundReference wasn't frozen.
-  if (auto* holder = asWorkerBoundReference(thiz)->holder) {
-    holder->dispose();
-    konanDestructInstance(holder);
-  }
-}
-
 // Defined in WorkerBoundReference.kt
 extern "C" void Kotlin_WorkerBoundReference_freezeHook(KRef thiz);
 
@@ -54,4 +32,9 @@ OBJ_GETTER(Kotlin_WorkerBoundReference_describe, KNativePtr holder) {
   RETURN_RESULT_OF0(reinterpret_cast<KRefSharedHolder*>(holder)->describe);
 }
 
+RUNTIME_NOTHROW void Kotlin_WorkerBoundReference_clean(KNativePtr holder) {
+    auto* typedHolder = reinterpret_cast<KRefSharedHolder*>(holder);
+    typedHolder->dispose();
+    konanDestructInstance(typedHolder);
+}
 }

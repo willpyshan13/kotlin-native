@@ -1073,9 +1073,6 @@ ALWAYS_INLINE void runDeallocationHooks(ContainerHeader* container) {
     if (type_info == theCleanerImplTypeInfo) {
         DisposeCleaner(obj);
     }
-    if (type_info == theWorkerBoundReferenceTypeInfo) {
-      DisposeWorkerBoundReference(obj);
-    }
 #if USE_CYCLIC_GC
     if ((type_info->flags_ & TF_LEAK_DETECTOR_CANDIDATE) != 0) {
       cyclicRemoveAtomicRoot(obj);
