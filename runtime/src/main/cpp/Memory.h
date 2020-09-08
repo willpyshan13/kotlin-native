@@ -558,6 +558,8 @@ void GC_RegisterWorker(void* worker) RUNTIME_NOTHROW;
 void GC_UnregisterWorker(void* worker) RUNTIME_NOTHROW;
 void GC_CollectorCallback(void* worker) RUNTIME_NOTHROW;
 
+void PerformFullGC() RUNTIME_NOTHROW;
+
 #ifdef __cplusplus
 }
 #endif

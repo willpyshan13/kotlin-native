@@ -895,6 +895,57 @@ task empty_substring(type: KonanLocalTest) {
     source = "runtime/basic/empty_substring.kt"
 }
 
+standaloneTest("cleaner_basic") {
+    enabled = (project.testTarget != 'wasm32') // Cleaners need workers
+    source = "runtime/basic/cleaner_basic.kt"
+    flags = ['-tr']
+}
+
+standaloneTest("cleaner_workers") {
+    enabled = (project.testTarget != 'wasm32') // Cleaners need workers
+    source = "runtime/basic/cleaner_workers.kt"
+    flags = ['-tr']
+}
+
+standaloneTest("cleaner_in_main_with_checker") {
+    enabled = (project.testTarget != 'wasm32') // Cleaners need workers
+    source = "runtime/basic/cleaner_in_main_with_checker.kt"
+    goldValue = "42\n"
+}
+
+standaloneTest("cleaner_in_main_without_checker") {
+    enabled = (project.testTarget != 'wasm32') // Cleaners need workers
+    source = "runtime/basic/cleaner_in_main_without_checker.kt"
+    goldValue = ""
+}
+
+standaloneTest("cleaner_leak_release") {
+    enabled = !project.globalTestArgs.contains('-g') && (project.testTarget != 'wasm32') // Cleaners need workers
+    source = "runtime/basic/cleaner_leak.kt"
+    goldValue = ""
+}
+
+standaloneTest("cleaner_leak_debug") {
+    enabled = !project.globalTestArgs.contains('-opt') && (project.testTarget != 'wasm32') // Cleaners need workers
+    source = "runtime/basic/cleaner_leak.kt"
+    flags = ['-g']
+    expectedExitStatusChecker = { it != 0 }
+    outputChecker = { s -> (s =~ /Cleaner (0x)?[0-9a-fA-F]+ was disposed after main()/).find() }
+}
+
+standaloneTest("cleaner_leak_without_checker") {
+    enabled = (project.testTarget != 'wasm32') // Cleaners need workers
+    source = "runtime/basic/cleaner_leak_without_checker.kt"
+    goldValue = ""
+}
+
+standaloneTest("cleaner_leak_with_checker") {
+    enabled = (project.testTarget != 'wasm32') // Cleaners need workers
+    source = "runtime/basic/cleaner_leak_with_checker.kt"
+    expectedExitStatusChecker = { it != 0 }
+    outputChecker = { s -> (s =~ /Cleaner (0x)?[0-9a-fA-F]+ was disposed after main()/).find() }
+}
+
 standaloneTest("worker_bound_reference0") {
     enabled = (project.testTarget != 'wasm32') // Workers need pthreads.
     source = "runtime/concurrent/worker_bound_reference0.kt"

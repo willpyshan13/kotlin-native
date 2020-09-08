@@ -64,6 +64,26 @@ internal class InteropLowering(context: Context) : FileLoweringPass {
     }
 }
 
+private fun IrExpression.isNonCapturingLambda(): Boolean {
+    if (this !is IrContainerExpression)
+        return false
+    if (statements.size != 2)
+        return false
+    if (origin != IrStatementOrigin.LAMBDA && origin != IrStatementOrigin.ANONYMOUS_FUNCTION)
+        return false
+
+    val firstStatement = statements[0]
+    if (firstStatement !is IrContainerExpression || firstStatement.statements.size != 0) {
+        return false
+    }
+
+    val secondStatement = statements[1]
+    if (secondStatement !is IrConstructorCall)
+        return false
+
+    return secondStatement.valueArgumentsCount == 0
+}
+
 private abstract class BaseInteropIrTransformer(private val context: Context) : IrBuildingTransformer(context) {
 
     protected inline fun <T> generateWithStubs(element: IrElement? = null, block: KotlinStubs.() -> T): T =
@@ -1191,6 +1211,21 @@ private class InteropTransformer(val context: Context, override val irFile: IrFi
                         putValueArgument(1, expression.getValueArgument(0))
                         putValueArgument(2, expression.getValueArgument(1))
                         putValueArgument(3, jobPointer)
+                    }
+                }
+                IntrinsicType.CREATE_CLEANER -> {
+                    val irCallableReference = expression.getValueArgument(1)
+                    if (irCallableReference == null || !irCallableReference.isNonCapturingLambda()) {
+                        context.reportCompilationError(
+                                "${function.fqNameForIrSerialization} must take an unbound, non-capturing function or lambda",
+                                irFile, expression
+                        )
+                    }
+
+                    builder.irCall(symbols.createCleanerImpl).apply {
+                        putTypeArgument(0, expression.getTypeArgument(0))
+                        putValueArgument(0, expression.getValueArgument(0))
+                        putValueArgument(1, expression.getValueArgument(1))
                     }
                 }
                 else -> expression
