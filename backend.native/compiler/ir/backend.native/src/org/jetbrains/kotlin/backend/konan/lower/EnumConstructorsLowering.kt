@@ -141,7 +141,8 @@ internal class EnumConstructorsLowering(val context: Context) : ClassLoweringPas
                                 type,
                                 varargElementType = null,
                                 isCrossinline = false,
-                                isNoinline = false
+                                isNoinline = false,
+                                isAssignable = false
                         ).apply {
                             it.bind(this)
                             parent = loweredConstructor
@@ -351,6 +352,14 @@ internal class EnumConstructorsLowering(val context: Context) : ClassLoweringPas
                             loweredParameter.symbol, expression.origin)
                 }
             }
+
+            override fun visitSetValue(expression: IrSetValue): IrExpression {
+                expression.transformChildrenVoid()
+                return loweredEnumConstructorParameters[expression.symbol.owner]?.let {
+                    IrSetValueImpl(expression.startOffset, expression.endOffset, it.type,
+                            it.symbol, expression.value, expression.origin)
+                } ?: expression
+            }
         }
     }
 }
@@ -372,6 +381,22 @@ private class ParameterMapper(superConstructor: IrConstructor,
                     expression.startOffset, expression.endOffset,
                     parameter.type,
                     parameter.symbol)
+        }
+        return expression
+    }
+
+    override fun visitSetValue(expression: IrSetValue): IrExpression {
+        expression.transformChildrenVoid()
+        val superParameter = expression.symbol.owner as? IrValueParameter ?: return expression
+        if (valueParameters.contains(superParameter)) {
+            val index = if (useLoweredIndex) superParameter.loweredIndex else superParameter.index
+            val parameter = constructor.valueParameters[index]
+            return IrSetValueImpl(
+                    expression.startOffset, expression.endOffset,
+                    parameter.type,
+                    parameter.symbol,
+                    expression.value,
+                    expression.origin)
         }
         return expression
     }
