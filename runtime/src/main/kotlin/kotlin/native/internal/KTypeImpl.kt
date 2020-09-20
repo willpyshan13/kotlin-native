@@ -25,6 +25,7 @@ internal class KTypeImpl(
     override fun toString(): String {
         val classifierString = when (classifier) {
             is KClass<*> -> classifier.qualifiedName ?: classifier.simpleName
+            is KTypeParameter -> classifier.name
             else -> null
         } ?: return "(non-denotable type)"
 
@@ -37,16 +38,7 @@ internal class KTypeImpl(
                 arguments.forEachIndexed { index, argument ->
                     if (index > 0) append(", ")
 
-                    if (argument.variance == null) {
-                        append('*')
-                    } else {
-                        append(when (argument.variance) {
-                            KVariance.INVARIANT -> ""
-                            KVariance.IN -> "in "
-                            KVariance.OUT -> "out "
-                        })
-                        append(argument.type)
-                    }
+                    append(argument)
                 }
 
                 append('>')
@@ -55,20 +47,4 @@ internal class KTypeImpl(
             if (isMarkedNullable) append('?')
         }
     }
-}
-
-internal class KTypeImplForGenerics : KType {
-    override val classifier: KClassifier?
-        get() = error("Generic types are not yet supported in reflection")
-
-    override val arguments: List<KTypeProjection> get() = emptyList()
-
-    override val isMarkedNullable: Boolean
-        get() = error("Generic types are not yet supported in reflection")
-
-    override fun equals(other: Any?) =
-            error("Generic types are not yet supported in reflection")
-
-    override fun hashCode(): Int =
-            error("Generic types are not yet supported in reflection")
 }
