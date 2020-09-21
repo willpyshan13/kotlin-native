@@ -3,9 +3,8 @@
  * that can be found in the LICENSE file.
  */
 
+#include "CompilerGenerated.h"
 #include "Types.h"
-
-// TODO: Populate the file with more accurate values.
 
 namespace {
 
@@ -28,6 +27,8 @@ TypeInfo theStringTypeInfoImpl = {};
 TypeInfo theThrowableTypeInfoImpl = {};
 TypeInfo theUnitTypeInfoImpl = {};
 TypeInfo theWorkerBoundReferenceTypeInfoImpl = {};
+
+ArrayHeader theEmptyStringImpl = { &theStringTypeInfoImpl, /* element count */ 0 };
 
 template <class T>
 struct KBox {
@@ -61,102 +62,115 @@ extern const TypeInfo* theThrowableTypeInfo = &theThrowableTypeInfoImpl;
 extern const TypeInfo* theUnitTypeInfo = &theUnitTypeInfoImpl;
 extern const TypeInfo* theWorkerBoundReferenceTypeInfo = &theWorkerBoundReferenceTypeInfoImpl;
 
-extern const ObjHeader theEmptyArray = {};
+// TODO: We have ObjHeader in a header file (see Arrays.cpp:94) but the compiler generates an ArrayHeader
+//  (see StaticData.createUniqueInstance). Is it ok at all?
+extern const ArrayHeader theEmptyArray = { &theArrayTypeInfoImpl, /* element count */0 };
 
-OBJ_GETTER(makeWeakReferenceCounter, void*) {
-    return nullptr;
+OBJ_GETTER0(TheEmptyString) {
+    RETURN_OBJ(theEmptyStringImpl.obj());
 }
 
-OBJ_GETTER(makePermanentWeakReferenceImpl, void*) {
-    return nullptr;
+RUNTIME_NORETURN OBJ_GETTER(makeWeakReferenceCounter, void*) {
+    THROW_NOT_IMPLEMENTED
 }
 
-OBJ_GETTER(makeObjCWeakReferenceImpl, void*) {
-    return nullptr;
+RUNTIME_NORETURN OBJ_GETTER(makePermanentWeakReferenceImpl, void*) {
+    THROW_NOT_IMPLEMENTED
 }
 
-void checkRangeIndexes(KInt from, KInt to, KInt size) {}
+RUNTIME_NORETURN OBJ_GETTER(makeObjCWeakReferenceImpl, void*) {
+    THROW_NOT_IMPLEMENTED
+}
 
-OBJ_GETTER(WorkerLaunchpad, KRef) {
-    return nullptr;
+void checkRangeIndexes(KInt from, KInt to, KInt size) {
+    if (from < 0 || to > size) {
+        throw std::out_of_range("Index out of bounds: from=" + std::to_string(from)
+                + ", to=" + std::to_string(to)
+                + ", size=" + std::to_string(size));
+    }
+    if (from > to) {
+        throw std::invalid_argument("Illegal argument: from > to, from=" + std::to_string(from) + ", to=" + std::to_string(to));
+    }
+}
+
+RUNTIME_NORETURN OBJ_GETTER(WorkerLaunchpad, KRef) {
+    THROW_NOT_IMPLEMENTED
 }
 
 void RUNTIME_NORETURN ThrowWorkerInvalidState() {
-    throw 0;
+    THROW_NOT_IMPLEMENTED
 }
 
 void RUNTIME_NORETURN ThrowNullPointerException() {
-    throw 0;
+    THROW_NOT_IMPLEMENTED
 }
 
 void RUNTIME_NORETURN ThrowArrayIndexOutOfBoundsException() {
-    throw 0;
+    THROW_NOT_IMPLEMENTED
 }
 
 void RUNTIME_NORETURN ThrowClassCastException(const ObjHeader* instance, const TypeInfo* type_info) {
-    throw 0;
+    THROW_NOT_IMPLEMENTED
 }
 
 void RUNTIME_NORETURN ThrowArithmeticException() {
-    throw 0;
+    THROW_NOT_IMPLEMENTED
 }
 
 void RUNTIME_NORETURN ThrowNumberFormatException() {
-    throw 0;
+    THROW_NOT_IMPLEMENTED
 }
 
 void RUNTIME_NORETURN ThrowOutOfMemoryError() {
-    throw 0;
+    THROW_NOT_IMPLEMENTED
 }
 
 void RUNTIME_NORETURN ThrowNotImplementedError() {
-    throw 0;
+    THROW_NOT_IMPLEMENTED
 }
 
 void RUNTIME_NORETURN ThrowCharacterCodingException() {
-    throw 0;
+    THROW_NOT_IMPLEMENTED
 }
 
 void RUNTIME_NORETURN ThrowIllegalArgumentException() {
-    throw 0;
+    THROW_NOT_IMPLEMENTED
 }
 
 void RUNTIME_NORETURN ThrowIllegalStateException() {
-    throw 0;
+    THROW_NOT_IMPLEMENTED
 }
 
 void RUNTIME_NORETURN ThrowInvalidMutabilityException(KConstRef where) {
-    throw 0;
+    THROW_NOT_IMPLEMENTED
 }
 
 void RUNTIME_NORETURN ThrowIncorrectDereferenceException() {
-    throw 0;
+    THROW_NOT_IMPLEMENTED
 }
 
 void RUNTIME_NORETURN ThrowIllegalObjectSharingException(KConstNativePtr typeInfo, KConstNativePtr address) {
-    throw 0;
+    THROW_NOT_IMPLEMENTED
 }
 
 void RUNTIME_NORETURN ThrowFreezingException(KRef toFreeze, KRef blocker) {
-    throw 0;
+    THROW_NOT_IMPLEMENTED
 }
 
-OBJ_GETTER0(TheEmptyString) {
-    return nullptr;
+void ReportUnhandledException(KRef throwable) {
+    konan::consolePrintf("Uncaught Kotlin exception.");
 }
 
-void ReportUnhandledException(KRef throwable) {}
-
-OBJ_GETTER(DescribeObjectForDebugging, KConstNativePtr typeInfo, KConstNativePtr address) {
-    return nullptr;
+RUNTIME_NORETURN OBJ_GETTER(DescribeObjectForDebugging, KConstNativePtr typeInfo, KConstNativePtr address) {
+    THROW_NOT_IMPLEMENTED
 }
 
-void ExceptionReporterLaunchpad(KRef reporter, KRef throwable) {}
+void ExceptionReporterLaunchpad(KRef reporter, KRef throwable) {
+    THROW_NOT_IMPLEMENTED
+}
 
-void Kotlin_WorkerBoundReference_freezeHook(KRef thiz) {}
-
-OBJ_GETTER(Kotlin_boxBoolean, KBoolean value) {
-    return nullptr;
+void Kotlin_WorkerBoundReference_freezeHook(KRef thiz) {
+    THROW_NOT_IMPLEMENTED
 }
 
 extern const KBoolean BOOLEAN_RANGE_FROM = false;
@@ -165,6 +179,14 @@ extern KBox<KBoolean> BOOLEAN_CACHE[] = {
         {{}, false},
         {{}, true},
 };
+
+OBJ_GETTER(Kotlin_boxBoolean, KBoolean value) {
+    if (value) {
+        RETURN_OBJ(&BOOLEAN_CACHE[1].header);
+    } else {
+        RETURN_OBJ(&BOOLEAN_CACHE[0].header);
+    }
+}
 
 extern const KByte BYTE_RANGE_FROM = -1;
 extern const KByte BYTE_RANGE_TO = 1;
@@ -206,8 +228,8 @@ extern KBox<KLong> LONG_CACHE[] = {
         {{}, 1},
 };
 
-OBJ_GETTER(Kotlin_Throwable_getMessage, KRef throwable) {
-    return nullptr;
+RUNTIME_NORETURN OBJ_GETTER(Kotlin_Throwable_getMessage, KRef throwable) {
+    THROW_NOT_IMPLEMENTED
 }
 
 } // extern "C"
