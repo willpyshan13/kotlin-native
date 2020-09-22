@@ -48,3 +48,19 @@ internal class KTypeImpl(
         }
     }
 }
+
+internal class KTypeImplForTypeParametersWithRecursiveBounds : KType {
+    override val classifier: KClassifier?
+        get() = error("Type parameters with recursive bounds are not yet supported in reflection")
+
+    override val arguments: List<KTypeProjection> get() = emptyList()
+
+    override val isMarkedNullable: Boolean
+        get() = error("Type parameters with recursive bounds are not yet supported in reflection")
+
+    override fun equals(other: Any?) =
+            error("Type parameters with recursive bounds are not yet supported in reflection")
+
+    override fun hashCode(): Int =
+            error("Type parameters with recursive bounds are not yet supported in reflection")
+}

@@ -52,7 +52,7 @@ internal class PreInlineLowering(val context: Context) : BodyLoweringPass {
                 } else if (expression.symbol.owner.isTypeOfIntrinsic()) {
                     val type = expression.getTypeArgument(0)
                             ?: org.jetbrains.kotlin.backend.konan.error(container.file, expression, "missing type argument")
-                    return with (kTypeGenerator) { builder.at(expression).irKType(type) }
+                    return with (kTypeGenerator) { builder.at(expression).irKType(type, needExactTypeParameters = true) }
                 }
 
                 return expression
