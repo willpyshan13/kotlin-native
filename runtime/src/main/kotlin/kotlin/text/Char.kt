@@ -40,9 +40,13 @@ external public fun Char.isIdentifierIgnorable(): Boolean
 
 /**
  * Returns `true` if this character is an ISO control character.
+ *
+ * A character is considered to be an ISO control character if its code is in the range `'\u0000'..'\u001F'` or in the range `'\u007F'..'\u009F'`.
+ *
+ * @sample samples.text.Chars.isISOControl
  */
 @SymbolName("Kotlin_Char_isISOControl")
-external public fun Char.isISOControl(): Boolean
+external public actual fun Char.isISOControl(): Boolean
 
 /**
  * Determines whether a character is whitespace according to the Unicode standard.
