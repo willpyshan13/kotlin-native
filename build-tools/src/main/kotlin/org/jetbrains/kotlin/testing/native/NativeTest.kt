@@ -3,15 +3,15 @@
  * that can be found in the LICENSE file.
  */
 
-package org.jetbrains.kotlin
+package org.jetbrains.kotlin.testing.native
 
-import groovy.lang.Closure
 import java.io.File
 import javax.inject.Inject
 import org.gradle.api.*
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.tasks.*
 import org.gradle.nativeplatform.test.tasks.RunTestExecutable
+import org.jetbrains.kotlin.ExecClang
 import org.jetbrains.kotlin.bitcode.CompileToBitcode
 import org.jetbrains.kotlin.konan.target.*
 
@@ -148,6 +148,7 @@ fun createTestTask(
         testedTaskNames: List<String>
 ): Task {
     val platformManager = project.rootProject.findProperty("platformManager") as PlatformManager
+    val googleTestExtension = project.extensions.getByName(RuntimeTestingPlugin.GOOGLE_TEST_EXTENSION_NAME) as GoogleTestExtension
     val testedTasks = testedTaskNames.map {
         project.tasks.getByName(it) as CompileToBitcode
     }
@@ -168,10 +169,7 @@ fun createTestTask(
                 includeFiles = listOf("**/*Test.cpp", "**/*Test.mm")
                 dependsOn(it)
                 compilerArgs.addAll(it.compilerArgs)
-                compilerArgs.add("-I" +
-                        File(project.rootProject.rootDir, "third_party/googletest/googletest/googletest/include"))
-                compilerArgs.add("-I" +
-                        File(project.rootProject.rootDir, "third_party/googletest/googletest/googlemock/include"))
+                headersDirs += googleTestExtension.headersDirs
             }
         if (task.inputFiles.count() == 0)
             null
@@ -179,8 +177,8 @@ fun createTestTask(
             task
     }
     val testFrameworkTasks = listOf(
-        project.tasks.getByPath(":third_party:googletest:${target}Googletest") as CompileToBitcode,
-        project.tasks.getByPath(":third_party:googletest:${target}Googlemock") as CompileToBitcode
+        project.tasks.getByName("${target}Googletest") as CompileToBitcode,
+        project.tasks.getByName("${target}Googlemock") as CompileToBitcode
     )
 
     val testSupportTask = project.tasks.getByName("${target}TestSupport") as CompileToBitcode

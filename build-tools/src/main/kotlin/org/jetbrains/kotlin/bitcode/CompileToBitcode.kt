@@ -5,8 +5,8 @@
 
 package org.jetbrains.kotlin.bitcode
 
-import org.gradle.api.Action
 import org.gradle.api.DefaultTask
+import org.gradle.api.file.FileCollection
 import org.gradle.api.tasks.*
 import org.jetbrains.kotlin.ExecClang
 import org.jetbrains.kotlin.konan.target.Family
@@ -39,8 +39,8 @@ open class CompileToBitcode @Inject constructor(
     )
 
     // Source files and headers are registered as inputs by the `inputFiles` and `headers` properties.
-    var srcDir = File(srcRoot, "cpp")
-    var headersDirs: List<File> = listOf(File(srcRoot, "headers"))
+    var srcDirs: FileCollection = project.files(srcRoot.resolve("cpp"))
+    var headersDirs: FileCollection = project.files(srcRoot.resolve("headers"))
 
     @Input
     var skipLinkagePhase = false
@@ -84,16 +84,18 @@ open class CompileToBitcode @Inject constructor(
     @get:InputFiles
     val inputFiles: Iterable<File>
         get() {
-            return project.fileTree(srcDir) {
-                it.include(includeFiles)
-                it.exclude(excludeFiles)
-            }.files
+            return srcDirs.flatMap { srcDir ->
+                project.fileTree(srcDir) {
+                    it.include(includeFiles)
+                    it.exclude(excludeFiles)
+                }.files
+            }
         }
 
     @get:InputFiles
     protected val headers: Iterable<File>
         get() {
-            return headersDirs.flatMap { dir ->
+            return headersDirs.files.flatMap { dir ->
                 project.fileTree(dir) {
                     it.include("**/*.h", "**/*.hpp")
                 }.files
