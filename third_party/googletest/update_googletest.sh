@@ -1,6 +1,6 @@
 #!/bin/sh
 
-REVISION='adeef192947fbc0f68fa14a6c494c8df32177508'
+REVISION='10ade8473b698a8fe14ddb518c2abd228669657a'
 REPO='https://github.com/google/googletest.git'
 PREFIX='third_party/googletest/googletest'
 
