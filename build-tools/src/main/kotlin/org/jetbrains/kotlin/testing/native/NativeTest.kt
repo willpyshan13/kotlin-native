@@ -218,15 +218,11 @@ fun createTestTask(
         dependsOn(compileTask)
     }
 
-    return project.tasks.create(testTaskName, RunTestExecutable::class.java).apply {
+    return project.tasks.create(testTaskName, Exec::class.java).apply {
         dependsOn(linkTask)
 
-        // By default, Gradle doesn't rerun the task if executable file changes.
-        // Register the executable as a file input to fix this.
-        inputs.file(linkTask.outputFile)
-
-        outputDir = project.buildDir.resolve("testReports/$testTaskName")
-        val xmlReport = outputDir.resolve("report.xml")
+        workingDir = project.buildDir.resolve("testReports/$testTaskName")
+        val xmlReport = workingDir.resolve("report.xml")
         executable(linkTask.outputFile)
         args("--gtest_output=xml:${xmlReport.absoluteFile}")
     }
