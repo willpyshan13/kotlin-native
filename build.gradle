@@ -28,13 +28,6 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import org.apache.tools.ant.filters.ReplaceTokens
 import org.jetbrains.kotlin.UtilsKt
 
-// Workaround the "DefaultClassLoaderScope must be locked before it can be used to compute a classpath"
-// error met after migration of :third_party:googletest to kts.
-// See also:
-// https://github.com/gradle/kotlin-dsl-samples/issues/607
-// https://github.com/gradle/gradle/issues/4823
-project(':third_party:googletest').evaluationDependsOn(":third_party")
-
 buildscript {
     apply from: "gradle/kotlinGradlePlugin.gradle"
 
