@@ -116,7 +116,6 @@ private fun <T> createCleanerImpl(argument: T, block: (T) -> Unit): Cleaner {
  * @param block must not capture anything
  */
 // TODO: Consider just annotating the lambda argument rather than using intrinsic.
-// TODO: Test with interop.
 @TypedIntrinsic(IntrinsicType.CREATE_CLEANER)
 external fun <T> createCleaner(argument: T, block: (T) -> Unit): Cleaner
 
