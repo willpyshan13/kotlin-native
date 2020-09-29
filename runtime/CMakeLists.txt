@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD 14)
 
 set(SRC_DIR ${CMAKE_SOURCE_DIR}/src)
 
-set(GOOGLETEST_DIR ${CMAKE_SOURCE_DIR}/../third_party/googletest/googletest)
+set(GOOGLETEST_DIR ${CMAKE_SOURCE_DIR}/googletest)
 
 include_directories(${SRC_DIR}/main/cpp)
 include_directories(${SRC_DIR}/debug/headers)
