@@ -225,5 +225,9 @@ fun createTestTask(
         val xmlReport = workingDir.resolve("report.xml")
         executable(linkTask.outputFile)
         args("--gtest_output=xml:${xmlReport.absoluteFile}")
+
+        doFirst {
+            workingDir.mkdirs()
+        }
     }
 }
