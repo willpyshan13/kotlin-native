@@ -946,6 +946,23 @@ standaloneTest("cleaner_leak_with_checker") {
     outputChecker = { s -> (s =~ /Cleaner (0x)?[0-9a-fA-F]+ was disposed after main()/).find() }
 }
 
+standaloneTest("cleaner_in_tls_main_without_checker") {
+    enabled = (project.testTarget != 'wasm32') // Cleaners need workers
+    source = "runtime/basic/cleaner_in_tls_main_without_checker.kt"
+}
+
+standaloneTest("cleaner_in_tls_main_with_checker") {
+    enabled = (project.testTarget != 'wasm32') // Cleaners need workers
+    source = "runtime/basic/cleaner_in_tls_main_with_checker.kt"
+    expectedExitStatusChecker = { it != 0 }
+    outputChecker = { s -> (s =~ /Cleaner (0x)?[0-9a-fA-F]+ was disposed after main()/).find() }
+}
+
+standaloneTest("cleaner_in_tls_worker") {
+    enabled = (project.testTarget != 'wasm32') // Cleaners need workers
+    source = "runtime/basic/cleaner_in_tls_worker.kt"
+}
+
 standaloneTest("worker_bound_reference0") {
     enabled = (project.testTarget != 'wasm32') // Workers need pthreads.
     source = "runtime/concurrent/worker_bound_reference0.kt"

@@ -55,6 +55,8 @@ fun testCleanerDestroyInChild() {
     assertNull(cleanerWeak!!.value)
     assertTrue(called.value)
     assertNull(funBoxWeak!!.value)
+
+    worker.requestTermination().result
 }
 
 inline fun tryWithTimeout(timeoutSeconds: Int, f: () -> Unit): Unit {
@@ -157,6 +159,8 @@ fun testCleanerDestroyFrozenInChild() {
     assertNull(cleanerWeak!!.value)
     assertTrue(called.value)
     assertNull(funBoxWeak!!.value)
+
+    worker.requestTermination().result
 }
 
 @Test
@@ -185,6 +189,8 @@ fun testCleanerDestroyInMain() {
     assertNull(cleanerWeak!!.value)
     assertTrue(called.value)
     assertNull(funBoxWeak!!.value)
+
+    worker.requestTermination().result
 }
 
 @Test
@@ -213,6 +219,8 @@ fun testCleanerDestroyFrozenInMain() {
     assertNull(cleanerWeak!!.value)
     assertTrue(called.value)
     assertNull(funBoxWeak!!.value)
+
+    worker.requestTermination().result
 }
 
 @Test
@@ -242,4 +250,32 @@ fun testCleanerDestroyShared() {
     assertNull(cleanerWeak!!.value)
     assertTrue(called.value)
     assertNull(funBoxWeak!!.value)
+
+    worker.requestTermination().result
+}
+
+@ThreadLocal
+var tlsValue = 11
+
+@Test
+fun testCleanerWithTLS() {
+    val worker = Worker.start()
+
+    tlsValue = 12
+
+    val value = AtomicInt(0)
+    worker.execute(TransferMode.SAFE, {value}) {
+        tlsValue = 13
+        createCleaner(it) {
+            it.value = tlsValue
+        }
+        Unit
+    }.result
+
+    worker.execute(TransferMode.SAFE, {}) { GC.collect() }.result
+    scheduleGCOnCleanerWorker().result
+
+    assertEquals(11, value.value)
+
+    worker.requestTermination().result
 }
