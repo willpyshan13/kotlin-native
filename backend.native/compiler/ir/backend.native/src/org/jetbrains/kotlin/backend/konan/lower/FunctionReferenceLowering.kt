@@ -49,8 +49,6 @@ internal class FunctionReferenceLowering(val context: Context): FileLoweringPass
                 declaration.origin == DECLARATION_ORIGIN_FUNCTION_REFERENCE_IMPL
     }
 
-    private val kTypeGenerator = KTypeGenerator(context)
-
     override fun lower(irFile: IrFile) {
         var generatedClasses = mutableListOf<IrClass>()
         irFile.transform(object: IrElementTransformerVoidWithContext() {
@@ -151,7 +149,7 @@ internal class FunctionReferenceLowering(val context: Context): FileLoweringPass
 
             fun transformFunctionReference(expression: IrFunctionReference, samSuperType: IrType? = null): IrExpression {
                 val parent: IrDeclarationContainer = (currentClass?.irElement as? IrClass) ?: irFile
-                val loweredFunctionReference = FunctionReferenceBuilder(parent, expression, samSuperType).build()
+                val loweredFunctionReference = FunctionReferenceBuilder(irFile, parent, expression, samSuperType).build()
                 generatedClasses.add(loweredFunctionReference.functionReferenceClass)
                 val irBuilder = context.createIrBuilder(currentScope!!.scope.scopeOwnerSymbol,
                         expression.startOffset, expression.endOffset)
@@ -177,10 +175,12 @@ internal class FunctionReferenceLowering(val context: Context): FileLoweringPass
     private val getContinuationSymbol = symbols.getContinuation
     private val continuationClassSymbol = getContinuationSymbol.owner.returnType.classifierOrFail as IrClassSymbol
 
-    private inner class FunctionReferenceBuilder(val parent: IrDeclarationParent,
-                                                 val functionReference: IrFunctionReference,
-                                                 val samSuperType: IrType?) {
-
+    private inner class FunctionReferenceBuilder(
+            val irFile: IrFile,
+            val parent: IrDeclarationParent,
+            val functionReference: IrFunctionReference,
+            val samSuperType: IrType?
+    ) {
         private val startOffset = functionReference.startOffset
         private val endOffset = functionReference.endOffset
         private val referencedFunction = functionReference.symbol.owner
@@ -359,6 +359,7 @@ internal class FunctionReferenceLowering(val context: Context): FileLoweringPass
                             type = parameter.type.substitute(typeArgumentsMap))
                 }
 
+                val kTypeGenerator = KTypeGenerator(context, irFile, functionReference)
                 body = context.createIrBuilder(symbol, startOffset, endOffset).irBlockBody {
                     val superConstructor = when {
                         isKSuspendFunction -> kSuspendFunctionImplConstructorSymbol.owner

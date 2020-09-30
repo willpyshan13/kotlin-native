@@ -7,9 +7,9 @@ package kotlin.native.internal
 
 import kotlin.reflect.*
 
-internal data class KTypeParameterImpl(
+internal class KTypeParameterImpl(
         override val name: String,
-        val containerFqName: String,
+        private val containerFqName: String,
         override val upperBounds: List<KType>,
         override val variance: KVariance,
         override val isReified: Boolean
@@ -19,4 +19,9 @@ internal data class KTypeParameterImpl(
         KVariance.IN -> "in "
         KVariance.OUT -> "out "
     } + name
+
+    override fun equals(other: Any?) =
+            other is KTypeParameterImpl && name == other.name && containerFqName == other.containerFqName
+
+    override fun hashCode() = containerFqName.hashCode() * 31 + name.hashCode()
 }

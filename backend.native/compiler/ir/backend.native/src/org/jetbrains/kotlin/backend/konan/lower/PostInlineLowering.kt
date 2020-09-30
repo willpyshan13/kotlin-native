@@ -6,6 +6,7 @@
 package org.jetbrains.kotlin.backend.konan.lower
 
 import org.jetbrains.kotlin.backend.common.FileLoweringPass
+import org.jetbrains.kotlin.backend.common.ir.Symbols
 import org.jetbrains.kotlin.backend.common.lower.IrBuildingTransformer
 import org.jetbrains.kotlin.backend.common.lower.at
 import org.jetbrains.kotlin.backend.konan.Context
@@ -90,6 +91,12 @@ internal class PostInlineLowering(val context: Context) : FileLoweringPass {
                             expression.startOffset, expression.endOffset,
                             context.irBuiltIns.stringType,
                             IrConstKind.String, builder.toString()))
+                } else if (Symbols.isTypeOfIntrinsic(expression.symbol)) {
+                    val type = expression.getTypeArgument(0)
+                            ?: org.jetbrains.kotlin.backend.konan.error(irFile, expression, "missing type argument")
+                    return with (KTypeGenerator(context, irFile, expression)) {
+                        builder.at(expression).irKType(type, needExactTypeParameters = true)
+                    }
                 }
 
                 return expression
