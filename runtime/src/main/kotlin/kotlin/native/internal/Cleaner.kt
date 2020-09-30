@@ -11,12 +11,25 @@ import kotlinx.cinterop.asStableRef
 
 public interface Cleaner
 
-@SharedImmutable
-private val cleanerWorker = Worker.start(errorReporting = false, name = "Cleaner worker")
+object CleanerWorker {
+    private val workerAtomic: AtomicReference<Worker?> = AtomicReference(null)
+
+    val worker: Worker
+        get() {
+            val savedWorker = workerAtomic.value
+            if (savedWorker != null)
+                return savedWorker
+            val newWorker = Worker.start(errorReporting = false, name = "Cleaner worker")
+            if (workerAtomic.compareAndSet(null, newWorker))
+                return newWorker
+            newWorker.requestTermination(false).result
+            return workerAtomic.value!!
+        }
+}
 
 @ExportForCppRuntime("Kotlin_CleanerImpl_shutdownCleanerWorker")
 private fun shutdownCleanerWorker(executeScheduledCleaners: Boolean) {
-    cleanerWorker.requestTermination(executeScheduledCleaners).result
+    CleanerWorker.worker.requestTermination(executeScheduledCleaners).result
 }
 
 @ExportTypeInfo("theCleanerImplTypeInfo")
@@ -27,7 +40,8 @@ private class CleanerImpl<T>(
 
     init {
         // Make sure that Cleaner Worker is initialized.
-        cleanerWorker
+        // TODO: Is it needed?
+        CleanerWorker.worker
     }
 
     private val objHolder = StableRef.create(obj as Any)
@@ -37,7 +51,7 @@ private class CleanerImpl<T>(
         // It's externally guaranteed that this is called only if cleanerWorker was
         // not yet shut down.
         val cleanPackage = Pair(cleanObj, objHolder).freeze()
-        cleanerWorker.execute(TransferMode.SAFE, { cleanPackage }) { (cleanObj, objHolder) ->
+        CleanerWorker.worker.execute(TransferMode.SAFE, { cleanPackage }) { (cleanObj, objHolder) ->
             try {
                 // TODO: Maybe if this fails with exception, it should be (optionally) reported.
                 @Suppress("UNCHECKED_CAST")
@@ -123,6 +137,6 @@ external fun <T> createCleaner(argument: T, block: (T) -> Unit): Cleaner
  * Schedule GC on a worker that executes Cleaner blocks.
  */
 fun scheduleGCOnCleanerWorker(): Future<Unit> =
-    cleanerWorker.execute(TransferMode.SAFE, {}) {
+    CleanerWorker.worker.execute(TransferMode.SAFE, {}) {
         GC.collect()
     }
