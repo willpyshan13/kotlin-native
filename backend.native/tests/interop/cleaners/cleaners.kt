@@ -13,7 +13,7 @@ fun createCleaner() {
 
 fun performGC() {
     GC.collect()
-    scheduleGCOnCleanerWorker().result
+    performGCOnCleanerWorker()
 }
 
 private var globalCleaner: Cleaner? = null

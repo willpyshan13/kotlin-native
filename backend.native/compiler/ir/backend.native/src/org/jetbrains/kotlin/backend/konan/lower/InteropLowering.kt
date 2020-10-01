@@ -65,23 +65,29 @@ internal class InteropLowering(context: Context) : FileLoweringPass {
 }
 
 private fun IrExpression.isNonCapturingLambda(): Boolean {
-    if (this !is IrContainerExpression)
-        return false
-    if (statements.size != 2)
-        return false
-    if (origin != IrStatementOrigin.LAMBDA && origin != IrStatementOrigin.ANONYMOUS_FUNCTION)
-        return false
+    val fromContainerExpression = fun(expr: IrExpression): IrConstructorCall? {
+        if (expr !is IrContainerExpression)
+            return null
+        if (expr.statements.size != 2)
+            return null
+        if (expr.origin != IrStatementOrigin.LAMBDA && expr.origin != IrStatementOrigin.ANONYMOUS_FUNCTION)
+            return null
 
-    val firstStatement = statements[0]
-    if (firstStatement !is IrContainerExpression || firstStatement.statements.size != 0) {
-        return false
+        val firstStatement = expr.statements[0]
+        if (firstStatement !is IrContainerExpression || firstStatement.statements.size != 0) {
+            return null
+        }
+
+        val secondStatement = expr.statements[1]
+
+        return secondStatement as? IrConstructorCall
     }
 
-    val secondStatement = statements[1]
-    if (secondStatement !is IrConstructorCall)
-        return false
+    val constructorCall = this as? IrConstructorCall
+            ?: fromContainerExpression(this)
+            ?: return false
 
-    return secondStatement.valueArgumentsCount == 0
+    return constructorCall.valueArgumentsCount == 0
 }
 
 private abstract class BaseInteropIrTransformer(private val context: Context) : IrBuildingTransformer(context) {

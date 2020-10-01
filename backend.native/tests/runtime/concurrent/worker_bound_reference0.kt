@@ -9,7 +9,7 @@ import kotlin.test.*
 
 import kotlin.native.concurrent.*
 import kotlin.native.internal.GC
-import kotlin.native.internal.scheduleGCOnCleanerWorker
+import kotlin.native.internal.performGCOnCleanerWorker
 import kotlin.native.ref.WeakReference
 import kotlin.text.Regex
 
@@ -416,7 +416,7 @@ fun fullyCollect() {
     // Deallocates local references. Enqueues cleaners on cleaner worker if need be.
     GC.collect()
     // Ensures enqueued cleaners have been executed and deallocates local references on cleaner worker.
-    scheduleGCOnCleanerWorker().result
+    performGCOnCleanerWorker()
     // If any WorkerBoundReference have been cleaned, their referents have been enqueued to deallocate on their creation thread.
     // So, run GC on the main thread again.
     GC.collect()
@@ -427,7 +427,7 @@ fun fullyCollectWithWorker(worker: Worker) {
     GC.collect()
     worker.execute(TransferMode.SAFE, {}) { GC.collect() }.result
     // Ensures enqueued cleaners have been executed and deallocates local references on cleaner worker.
-    scheduleGCOnCleanerWorker().result
+    performGCOnCleanerWorker()
     // If any WorkerBoundReference have been cleaned, their referents have been enqueued to deallocate on their creation thread.
     // So, run GC on the main thread again.
     GC.collect()

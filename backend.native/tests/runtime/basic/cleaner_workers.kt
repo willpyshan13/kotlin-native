@@ -50,7 +50,7 @@ fun testCleanerDestroyInChild() {
 
     GC.collect()
     worker.execute(TransferMode.SAFE, {}) { GC.collect() }.result
-    scheduleGCOnCleanerWorker().result
+    performGCOnCleanerWorker()
 
     assertNull(cleanerWeak!!.value)
     assertTrue(called.value)
@@ -95,7 +95,7 @@ fun testCleanerDestroyWithChild() {
 
     tryWithTimeout(3) {
         GC.collect()  // Collect local stack (from previous iteration)
-        scheduleGCOnCleanerWorker().result  // Collect cleaners stack
+        performGCOnCleanerWorker()  // Collect cleaners stack
 
         assertNull(cleanerWeak!!.value)
         assertTrue(called.value)
@@ -125,7 +125,7 @@ fun testCleanerDestroyFrozenWithChild() {
 
     tryWithTimeout(3) {
         GC.collect()  // Collect local stack (from previous iteration)
-        scheduleGCOnCleanerWorker().result  // Collect cleaners stack
+        performGCOnCleanerWorker()  // Collect cleaners stack
 
         assertNull(cleanerWeak!!.value)
         assertTrue(called.value)
@@ -154,7 +154,7 @@ fun testCleanerDestroyFrozenInChild() {
 
     GC.collect()
     worker.execute(TransferMode.SAFE, {}) { GC.collect() }.result
-    scheduleGCOnCleanerWorker().result
+    performGCOnCleanerWorker()
 
     assertNull(cleanerWeak!!.value)
     assertTrue(called.value)
@@ -184,7 +184,7 @@ fun testCleanerDestroyInMain() {
 
     GC.collect()
     worker.execute(TransferMode.SAFE, {}) { GC.collect() }.result
-    scheduleGCOnCleanerWorker().result
+    performGCOnCleanerWorker()
 
     assertNull(cleanerWeak!!.value)
     assertTrue(called.value)
@@ -214,7 +214,7 @@ fun testCleanerDestroyFrozenInMain() {
 
     GC.collect()
     worker.execute(TransferMode.SAFE, {}) { GC.collect() }.result
-    scheduleGCOnCleanerWorker().result
+    performGCOnCleanerWorker()
 
     assertNull(cleanerWeak!!.value)
     assertTrue(called.value)
@@ -245,7 +245,7 @@ fun testCleanerDestroyShared() {
 
     GC.collect()
     worker.execute(TransferMode.SAFE, {}) { GC.collect() }.result
-    scheduleGCOnCleanerWorker().result
+    performGCOnCleanerWorker()
 
     assertNull(cleanerWeak!!.value)
     assertTrue(called.value)
@@ -273,7 +273,7 @@ fun testCleanerWithTLS() {
     }.result
 
     worker.execute(TransferMode.SAFE, {}) { GC.collect() }.result
-    scheduleGCOnCleanerWorker().result
+    performGCOnCleanerWorker()
 
     assertEquals(11, value.value)
 

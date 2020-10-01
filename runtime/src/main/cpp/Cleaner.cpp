@@ -20,7 +20,7 @@ void disposeCleaner(KRef thiz) {
     if (atomicGet(&cleanersDisabled)) {
         if (Kotlin_cleanersLeakCheckerEnabled()) {
             konan::consoleErrorf(
-                    "Cleaner %p was disposed after main()\n"
+                    "Cleaner %p was disposed during program exit\n"
                     "Use `Platform.isCleanersLeakCheckerActive = false` to avoid this check.\n",
                     thiz);
             RuntimeCheck(false, "Terminating now");

@@ -65,9 +65,8 @@ public class WorkerBoundReference<out T : Any>(value: T) {
         if (valueBeforeFreezing == null)
             return
         ptr = createWorkerBoundReference(valueBeforeFreezing!!)
-        cleaner = createCleaner(ptr) {
-            cleanWorkerBoundReference(it)
-        }
+        @OptIn(ExperimentalStdlibApi::class)
+        cleaner = createCleaner(ptr, ::cleanWorkerBoundReference)
         valueBeforeFreezing = null
     }
 }

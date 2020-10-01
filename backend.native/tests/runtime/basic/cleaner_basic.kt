@@ -48,7 +48,7 @@ fun testCleaner() {
     }()
 
     GC.collect()
-    scheduleGCOnCleanerWorker().result
+    performGCOnCleanerWorker()
 
     assertNull(cleanerWeak!!.value)
     assertTrue(called.value)
@@ -73,7 +73,7 @@ fun testCleanerFrozen() {
     }()
 
     GC.collect()
-    scheduleGCOnCleanerWorker().result
+    performGCOnCleanerWorker()
 
     assertNull(cleanerWeak!!.value)
     assertTrue(called.value)
@@ -136,7 +136,7 @@ fun testCleanerWithInt() {
     }()
 
     GC.collect()
-    scheduleGCOnCleanerWorker().result
+    performGCOnCleanerWorker()
 
     assertNull(cleanerWeak!!.value)
     assertEquals(42, globalInt.value)
@@ -156,7 +156,7 @@ fun testCleanerWithNativePtr() {
     }()
 
     GC.collect()
-    scheduleGCOnCleanerWorker().result
+    performGCOnCleanerWorker()
 
     assertNull(cleanerWeak!!.value)
     assertEquals(NativePtr.NULL + 42L, globalPtr.value)
@@ -178,7 +178,7 @@ fun testCleanerWithException() {
     }()
 
     GC.collect()
-    scheduleGCOnCleanerWorker().result
+    performGCOnCleanerWorker()
 
     assertNull(cleanerWeak!!.value)
     // Cleaners block started executing.

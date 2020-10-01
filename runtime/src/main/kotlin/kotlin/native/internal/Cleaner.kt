@@ -11,69 +11,6 @@ import kotlinx.cinterop.asStableRef
 
 public interface Cleaner
 
-object CleanerWorker {
-    private val workerAtomic: AtomicReference<Worker?> = AtomicReference(null)
-
-    val worker: Worker
-        get() {
-            val savedWorker = workerAtomic.value
-            if (savedWorker != null)
-                return savedWorker
-            val newWorker = Worker.start(errorReporting = false, name = "Cleaner worker")
-            if (workerAtomic.compareAndSet(null, newWorker))
-                return newWorker
-            newWorker.requestTermination(false).result
-            return workerAtomic.value!!
-        }
-}
-
-@ExportForCppRuntime("Kotlin_CleanerImpl_shutdownCleanerWorker")
-private fun shutdownCleanerWorker(executeScheduledCleaners: Boolean) {
-    CleanerWorker.worker.requestTermination(executeScheduledCleaners).result
-}
-
-@ExportTypeInfo("theCleanerImplTypeInfo")
-private class CleanerImpl<T>(
-    obj: T,
-    private val cleanObj: (T) -> Unit,
-): Cleaner {
-
-    init {
-        // Make sure that Cleaner Worker is initialized.
-        // TODO: Is it needed?
-        CleanerWorker.worker
-    }
-
-    private val objHolder = StableRef.create(obj as Any)
-
-    @ExportForCppRuntime("Kotlin_CleanerImpl_clean")
-    private fun clean() {
-        // It's externally guaranteed that this is called only if cleanerWorker was
-        // not yet shut down.
-        val cleanPackage = Pair(cleanObj, objHolder).freeze()
-        CleanerWorker.worker.execute(TransferMode.SAFE, { cleanPackage }) { (cleanObj, objHolder) ->
-            try {
-                // TODO: Maybe if this fails with exception, it should be (optionally) reported.
-                @Suppress("UNCHECKED_CAST")
-                cleanObj(objHolder.get() as T)
-            } finally {
-                objHolder.dispose()
-            }
-        }
-    }
-}
-
-@SymbolName("Kotlin_Any_isShareable")
-external private fun Any?.isShareable(): Boolean
-
-@ExportForCompiler
-private fun <T> createCleanerImpl(argument: T, block: (T) -> Unit): Cleaner {
-    if (!argument.isShareable())
-        throw IllegalArgumentException("$argument must be shareable")
-
-    return CleanerImpl(argument, block.freeze())
-}
-
 /**
  * Creates an object with a cleanup associated.
  *
@@ -115,7 +52,7 @@ private fun <T> createCleanerImpl(argument: T, block: (T) -> Unit): Cleaner {
  * [block] should not use `@ThreadLocal` globals, because it may
  * be executed on a different thread.
  *
- * If [block] throws an exception, it gets silently ignored.
+ * If [block] throws an exception, the behavior is unspecified.
  *
  * Cleaners should not be kept in globals, because if cleaner is not deallocated
  * before exiting main(), it'll never get executed.
@@ -130,13 +67,81 @@ private fun <T> createCleanerImpl(argument: T, block: (T) -> Unit): Cleaner {
  * @param block must not capture anything
  */
 // TODO: Consider just annotating the lambda argument rather than using intrinsic.
+// TODO: Test on a block being lambda, anonymous function, function reference.
+// TODO: Test on concurrently creating and destroying many cleaners.
+@ExperimentalStdlibApi
 @TypedIntrinsic(IntrinsicType.CREATE_CLEANER)
 external fun <T> createCleaner(argument: T, block: (T) -> Unit): Cleaner
 
 /**
- * Schedule GC on a worker that executes Cleaner blocks.
+ * Perform GC on a worker that executes Cleaner blocks.
  */
-fun scheduleGCOnCleanerWorker(): Future<Unit> =
+@ExperimentalStdlibApi
+fun performGCOnCleanerWorker() =
     CleanerWorker.worker.execute(TransferMode.SAFE, {}) {
         GC.collect()
+    }.result
+
+private object CleanerWorker {
+    private val workerAtomic: AtomicReference<Worker?> = AtomicReference(null)
+
+    val worker: Worker
+        get() {
+            val savedWorker = workerAtomic.value
+            if (savedWorker != null)
+                return savedWorker
+            val newWorker = Worker.start(errorReporting = false, name = "Cleaner worker")
+            if (workerAtomic.compareAndSet(null, newWorker))
+                return newWorker
+            newWorker.requestTermination(false).result
+            return workerAtomic.value!!
+        }
+}
+
+@ExportForCppRuntime("Kotlin_CleanerImpl_shutdownCleanerWorker")
+private fun shutdownCleanerWorker(executeScheduledCleaners: Boolean) {
+    CleanerWorker.worker.requestTermination(executeScheduledCleaners).result
+}
+
+@ExportTypeInfo("theCleanerImplTypeInfo")
+private class CleanerImpl<T>(
+    obj: T,
+    private val cleanObj: (T) -> Unit,
+): Cleaner {
+
+    init {
+        // Make sure that Cleaner Worker is initialized.
+        // TODO: Is it needed?
+        CleanerWorker.worker
     }
+
+    private val objHolder = StableRef.create(obj as Any)
+
+    @ExportForCppRuntime("Kotlin_CleanerImpl_clean")
+    private fun clean() {
+        // It's externally guaranteed that this is called only if cleanerWorker was
+        // not yet shut down.
+        val cleanPackage = Pair(cleanObj, objHolder).freeze()
+        // TODO: The future is leaking here.
+        CleanerWorker.worker.execute(TransferMode.SAFE, { cleanPackage }) { (cleanObj, objHolder) ->
+            try {
+                // TODO: Maybe if this fails with exception, it should be (optionally) reported.
+                @Suppress("UNCHECKED_CAST")
+                cleanObj(objHolder.get() as T)
+            } finally {
+                objHolder.dispose()
+            }
+        }
+    }
+}
+
+@SymbolName("Kotlin_Any_isShareable")
+external private fun Any?.isShareable(): Boolean
+
+@ExportForCompiler
+private fun <T> createCleanerImpl(argument: T, block: (T) -> Unit): Cleaner {
+    if (!argument.isShareable())
+        throw IllegalArgumentException("$argument must be shareable")
+
+    return CleanerImpl(argument, block.freeze())
+}
