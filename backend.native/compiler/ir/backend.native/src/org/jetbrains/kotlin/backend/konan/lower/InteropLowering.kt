@@ -64,13 +64,14 @@ internal class InteropLowering(context: Context) : FileLoweringPass {
     }
 }
 
-private fun IrExpression.isNonCapturingLambda(): Boolean {
+private fun IrExpression.isNonCapturingFunction(): Boolean {
+    if (!type.isFunctionTypeOrSubtype())
+        return false
+
     val fromContainerExpression = fun(expr: IrExpression): IrConstructorCall? {
         if (expr !is IrContainerExpression)
             return null
         if (expr.statements.size != 2)
-            return null
-        if (expr.origin != IrStatementOrigin.LAMBDA && expr.origin != IrStatementOrigin.ANONYMOUS_FUNCTION)
             return null
 
         val firstStatement = expr.statements[0]
@@ -1221,7 +1222,7 @@ private class InteropTransformer(val context: Context, override val irFile: IrFi
                 }
                 IntrinsicType.CREATE_CLEANER -> {
                     val irCallableReference = expression.getValueArgument(1)
-                    if (irCallableReference == null || !irCallableReference.isNonCapturingLambda()) {
+                    if (irCallableReference == null || !irCallableReference.isNonCapturingFunction()) {
                         context.reportCompilationError(
                                 "${function.fqNameForIrSerialization} must take an unbound, non-capturing function or lambda",
                                 irFile, expression
