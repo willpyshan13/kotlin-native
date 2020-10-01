@@ -83,23 +83,14 @@ fun performGCOnCleanerWorker() =
     }.result
 
 private object CleanerWorker {
-    private val workerAtomic: AtomicReference<Worker?> = AtomicReference(null)
-
-    val worker: Worker
-        get() {
-            val savedWorker = workerAtomic.value
-            if (savedWorker != null)
-                return savedWorker
-            val newWorker = Worker.start(errorReporting = false, name = "Cleaner worker")
-            if (workerAtomic.compareAndSet(null, newWorker))
-                return newWorker
-            newWorker.requestTermination(false).result
-            return workerAtomic.value!!
-        }
+    // Worker is an int. Putting it inside an object to make sure it's initialized
+    // lazily.
+    val worker = Worker.start(errorReporting = false, name = "Cleaner worker")
 }
 
 @ExportForCppRuntime("Kotlin_CleanerImpl_shutdownCleanerWorker")
 private fun shutdownCleanerWorker(executeScheduledCleaners: Boolean) {
+    // TODO: This starts the worker even if no cleaners were ever created.
     CleanerWorker.worker.requestTermination(executeScheduledCleaners).result
 }
 
