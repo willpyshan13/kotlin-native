@@ -930,7 +930,7 @@ standaloneTest("cleaner_leak_debug") {
     source = "runtime/basic/cleaner_leak.kt"
     flags = ['-g']
     expectedExitStatusChecker = { it != 0 }
-    outputChecker = { s -> (s =~ /Cleaner (0x)?[0-9a-fA-F]+ was disposed after main()/).find() }
+    outputChecker = { s -> (s =~ /Cleaner (0x)?[0-9a-fA-F]+ was disposed during program exit/).find() }
 }
 
 standaloneTest("cleaner_leak_without_checker") {
@@ -943,7 +943,7 @@ standaloneTest("cleaner_leak_with_checker") {
     enabled = (project.testTarget != 'wasm32') // Cleaners need workers
     source = "runtime/basic/cleaner_leak_with_checker.kt"
     expectedExitStatusChecker = { it != 0 }
-    outputChecker = { s -> (s =~ /Cleaner (0x)?[0-9a-fA-F]+ was disposed after main()/).find() }
+    outputChecker = { s -> (s =~ /Cleaner (0x)?[0-9a-fA-F]+ was disposed during program exit/).find() }
 }
 
 standaloneTest("cleaner_in_tls_main_without_checker") {
@@ -955,7 +955,7 @@ standaloneTest("cleaner_in_tls_main_with_checker") {
     enabled = (project.testTarget != 'wasm32') // Cleaners need workers
     source = "runtime/basic/cleaner_in_tls_main_with_checker.kt"
     expectedExitStatusChecker = { it != 0 }
-    outputChecker = { s -> (s =~ /Cleaner (0x)?[0-9a-fA-F]+ was disposed after main()/).find() }
+    outputChecker = { s -> (s =~ /Cleaner (0x)?[0-9a-fA-F]+ was disposed during program exit/).find() }
 }
 
 standaloneTest("cleaner_in_tls_worker") {

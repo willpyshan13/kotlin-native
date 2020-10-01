@@ -416,6 +416,7 @@ fun fullyCollect() {
     // Deallocates local references. Enqueues cleaners on cleaner worker if need be.
     GC.collect()
     // Ensures enqueued cleaners have been executed and deallocates local references on cleaner worker.
+    @OptIn(ExperimentalStdlibApi::class)
     performGCOnCleanerWorker()
     // If any WorkerBoundReference have been cleaned, their referents have been enqueued to deallocate on their creation thread.
     // So, run GC on the main thread again.
@@ -427,6 +428,7 @@ fun fullyCollectWithWorker(worker: Worker) {
     GC.collect()
     worker.execute(TransferMode.SAFE, {}) { GC.collect() }.result
     // Ensures enqueued cleaners have been executed and deallocates local references on cleaner worker.
+    @OptIn(ExperimentalStdlibApi::class)
     performGCOnCleanerWorker()
     // If any WorkerBoundReference have been cleaned, their referents have been enqueued to deallocate on their creation thread.
     // So, run GC on the main thread again.
