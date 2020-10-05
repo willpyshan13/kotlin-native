@@ -9,7 +9,6 @@ import kotlin.test.*
 
 import kotlin.native.concurrent.*
 import kotlin.native.internal.GC
-import kotlin.native.internal.performGCOnCleanerWorker
 import kotlin.native.ref.WeakReference
 import kotlin.text.Regex
 
@@ -412,36 +411,12 @@ fun getOwnerAndWeaks(initial: Int): Triple<FreezableAtomicReference<WorkerBoundR
     return Triple(refOwner, refWeak, refValueWeak)
 }
 
-fun fullyCollect() {
-    // Deallocates local references. Enqueues cleaners on cleaner worker if need be.
-    GC.collect()
-    // Ensures enqueued cleaners have been executed and deallocates local references on cleaner worker.
-    @OptIn(ExperimentalStdlibApi::class)
-    performGCOnCleanerWorker()
-    // If any WorkerBoundReference have been cleaned, their referents have been enqueued to deallocate on their creation thread.
-    // So, run GC on the main thread again.
-    GC.collect()
-}
-
-fun fullyCollectWithWorker(worker: Worker) {
-    // Deallocates local references. Enqueues cleaners on cleaner worker if need be.
-    GC.collect()
-    worker.execute(TransferMode.SAFE, {}) { GC.collect() }.result
-    // Ensures enqueued cleaners have been executed and deallocates local references on cleaner worker.
-    @OptIn(ExperimentalStdlibApi::class)
-    performGCOnCleanerWorker()
-    // If any WorkerBoundReference have been cleaned, their referents have been enqueued to deallocate on their creation thread.
-    // So, run GC on the main thread again.
-    GC.collect()
-    worker.execute(TransferMode.SAFE, {}) { GC.collect() }.result
-}
-
 @Test
 fun testCollect() {
     val (refOwner, refWeak, refValueWeak) = getOwnerAndWeaks(3)
 
     refOwner.value = null
-    fullyCollect()
+    GC.collect()
 
     // Last reference to WorkerBoundReference is gone, so it and it's referent are destroyed.
     assertNull(refWeak.value)
@@ -462,7 +437,7 @@ fun testCollectFrozen() {
     val (refOwner, refWeak, refValueWeak) = getOwnerAndWeaksFrozen(3)
 
     refOwner.value = null
-    fullyCollect()
+    GC.collect()
 
     // Last reference to WorkerBoundReference is gone, so it and it's referent are destroyed.
     assertNull(refWeak.value)
@@ -478,14 +453,14 @@ fun collectInWorkerFrozen(worker: Worker, semaphore: AtomicInt): Pair<WeakRefere
         }
 
         refOwner.value = null
-        fullyCollect()
+        GC.collect()
     }
 
     while (semaphore.value < 1) {
     }
     // At this point worker is spinning on semaphore. refOwner still contains reference to
     // WorkerBoundReference, so referent is kept alive.
-    fullyCollect()
+    GC.collect()
     assertNotNull(refValueWeak.value)
 
     return Pair(refValueWeak, future)
@@ -502,7 +477,7 @@ fun testCollectInWorkerFrozen() {
     future.result
 
     // At this point WorkerBoundReference no longer has a reference, so it's referent is destroyed.
-    fullyCollect()
+    GC.collect()
     assertNull(refValueWeak.value)
 
     worker.requestTermination().result
@@ -516,7 +491,7 @@ fun doNotCollectInWorkerFrozen(worker: Worker, semaphore: AtomicInt): Future<Wor
         while (semaphore.value < 2) {
         }
 
-        fullyCollect()
+        GC.collect()
         ref
     }
 }
@@ -530,7 +505,7 @@ fun testDoNotCollectInWorkerFrozen() {
     val future = doNotCollectInWorkerFrozen(worker, semaphore)
     while (semaphore.value < 1) {
     }
-    fullyCollect()
+    GC.collect()
     semaphore.increment()
 
     val value = future.result
@@ -562,7 +537,7 @@ fun collectCyclicGarbage() {
     val (ref1Owner, ref1Weak, ref2Weak) = createCyclicGarbage()
 
     ref1Owner.value = null
-    fullyCollect()
+    GC.collect()
 
     assertNull(ref1Weak.value)
     assertNull(ref2Weak.value)
@@ -586,7 +561,7 @@ fun doesNotCollectCyclicGarbageFrozen() {
     val (ref1Owner, ref1Weak, ref2Weak) = createCyclicGarbageFrozen()
 
     ref1Owner.value = null
-    fullyCollect()
+    GC.collect()
 
     // If these asserts fail, that means WorkerBoundReference managed to clean up cyclic garbage all by itself.
     assertNotNull(ref1Weak.value)
@@ -618,7 +593,8 @@ fun doesNotCollectCrossThreadCyclicGarbageFrozen() {
     val (ref1Owner, ref1Weak, ref2Weak) = createCrossThreadCyclicGarbageFrozen(worker)
 
     ref1Owner.value = null
-    fullyCollectWithWorker(worker)
+    GC.collect()
+    worker.execute(TransferMode.SAFE, {}) { GC.collect() }.result
 
     // If these asserts fail, that means WorkerBoundReference managed to clean up cyclic garbage all by itself.
     assertNotNull(ref1Weak.value)
@@ -655,31 +631,26 @@ fun dispose(refOwner: AtomicReference<WorkerBoundReference<C1>?>) {
 }
 
 @Test
-fun collectCyclicGarbageWithAtomicsFrozen() {
-    val (ref1Owner, ref1Weak, ref2Weak) = createCyclicGarbageWithAtomicsFrozen()
-
-    dispose(ref1Owner)
-
-    // Schedules and executes WBR<C2>s cleaner.
-    fullyCollect()
-    // Schedules and executes WBR<C1>s cleaner.
-    fullyCollect()
-
-    assertNull(ref1Weak.value)
-    assertNull(ref2Weak.value)
-}
-
-@Test
 fun doesNotCollectCyclicGarbageWithAtomicsFrozen() {
     val (ref1Owner, ref1Weak, ref2Weak) = createCyclicGarbageWithAtomicsFrozen()
 
     ref1Owner.value = null
-    fullyCollect()
-    fullyCollect()
+    GC.collect()
 
     // If these asserts fail, that means AtomicReference<WorkerBoundReference> managed to clean up cyclic garbage all by itself.
     assertNotNull(ref1Weak.value)
     assertNotNull(ref2Weak.value)
+}
+
+@Test
+fun collectCyclicGarbageWithAtomicsFrozen() {
+    val (ref1Owner, ref1Weak, ref2Weak) = createCyclicGarbageWithAtomicsFrozen()
+
+    dispose(ref1Owner)
+    GC.collect()
+
+    assertNull(ref1Weak.value)
+    assertNull(ref2Weak.value)
 }
 
 fun createCrossThreadCyclicGarbageWithAtomicsFrozen(
@@ -700,36 +671,38 @@ fun createCrossThreadCyclicGarbageWithAtomicsFrozen(
 }
 
 @Test
-fun collectCrossThreadCyclicGarbageWithAtomicsFrozen() {
-    val worker = Worker.start()
-
-    val (ref1Owner, ref1Weak, ref2Weak) = createCrossThreadCyclicGarbageWithAtomicsFrozen(worker)
-
-    dispose(ref1Owner)
-    // Schedules and executes WBR<C2>s cleaner.
-    fullyCollectWithWorker(worker)
-    // Schedules and executes WBR<C1>s cleaner.
-    fullyCollectWithWorker(worker)
-
-    assertNull(ref1Weak.value)
-    assertNull(ref2Weak.value)
-
-    worker.requestTermination().result
-}
-
-@Test
 fun doesNotCollectCrossThreadCyclicGarbageWithAtomicsFrozen() {
     val worker = Worker.start()
 
     val (ref1Owner, ref1Weak, ref2Weak) = createCrossThreadCyclicGarbageWithAtomicsFrozen(worker)
 
     ref1Owner.value = null
-    fullyCollectWithWorker(worker)
-    fullyCollectWithWorker(worker)
+    GC.collect()
+    worker.execute(TransferMode.SAFE, {}) { GC.collect() }.result
 
     // If these asserts fail, that means AtomicReference<WorkerBoundReference> managed to clean up cyclic garbage all by itself.
     assertNotNull(ref1Weak.value)
     assertNotNull(ref2Weak.value)
+
+    worker.requestTermination().result
+}
+
+@Test
+fun collectCrossThreadCyclicGarbageWithAtomicsFrozen() {
+    val worker = Worker.start()
+
+    val (ref1Owner, ref1Weak, ref2Weak) = createCrossThreadCyclicGarbageWithAtomicsFrozen(worker)
+
+    dispose(ref1Owner)
+    // This marks C2 as gone on the main thread
+    GC.collect()
+    // This cleans up all the references from the worker thread and destroys C2, but C1 is still alive.
+    worker.execute(TransferMode.SAFE, {}) { GC.collect() }.result
+    // And this finally destroys C1
+    GC.collect()
+
+    assertNull(ref1Weak.value)
+    assertNull(ref2Weak.value)
 
     worker.requestTermination().result
 }

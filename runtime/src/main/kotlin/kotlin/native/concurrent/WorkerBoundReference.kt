@@ -16,9 +16,6 @@ external private fun derefWorkerBoundReference(ref: NativePtr): Any?
 @SymbolName("Kotlin_WorkerBoundReference_describe")
 external private fun describeWorkerBoundReference(ref: NativePtr): String
 
-@SymbolName("Kotlin_WorkerBoundReference_clean")
-external private fun cleanWorkerBoundReference(ref: NativePtr): Unit
-
 /**
  * A shared reference to a Kotlin object that doesn't freeze the referred object when it gets frozen itself.
  *
@@ -29,6 +26,7 @@ external private fun cleanWorkerBoundReference(ref: NativePtr): Unit
  * To resolve such cycles consider using [AtomicReference<WorkerBoundReference?>] which can be explicitly
  * nulled out.
  */
+@NoReorderFields
 @ExportTypeInfo("theWorkerBoundReferenceTypeInfo")
 public class WorkerBoundReference<out T : Any>(value: T) {
 
@@ -57,16 +55,12 @@ public class WorkerBoundReference<out T : Any>(value: T) {
      */
     val worker: Worker = Worker.current
 
-    private lateinit var cleaner: Cleaner
-
     @ExportForCppRuntime("Kotlin_WorkerBoundReference_freezeHook")
     private fun freezeHook() {
         // If this hook was already run, do nothing.
         if (valueBeforeFreezing == null)
             return
         ptr = createWorkerBoundReference(valueBeforeFreezing!!)
-        @OptIn(ExperimentalStdlibApi::class)
-        cleaner = createCleaner(ptr, ::cleanWorkerBoundReference)
         valueBeforeFreezing = null
     }
 }
