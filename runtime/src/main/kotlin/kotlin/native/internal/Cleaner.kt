@@ -95,6 +95,7 @@ private fun shutdownCleanerWorker(executeScheduledCleaners: Boolean) {
 }
 
 @ExportTypeInfo("theCleanerImplTypeInfo")
+@HasFinalizer
 private class CleanerImpl<T>(
     obj: T,
     private val cleanObj: (T) -> Unit,

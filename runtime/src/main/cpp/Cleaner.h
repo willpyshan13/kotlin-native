@@ -9,9 +9,7 @@
 #include "Common.h"
 #include "Types.h"
 
-// Not inlining this call as it affects deallocation performance for
-// all types.
-RUNTIME_NOTHROW void DisposeCleaner(KRef thiz) NO_INLINE;
+RUNTIME_NOTHROW void DisposeCleaner(KRef thiz);
 
 void ShutdownCleaners(bool executeScheduledCleaners);
 
